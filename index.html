@@ -34,6 +34,7 @@
   body{
     margin:0;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
     font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, Segoe UI, Roboto, Arial, "Noto Sans", sans-serif;
     color:#111;
     background:
@@ -121,7 +122,8 @@
     width:var(--btn-size); height:var(--btn-size);
     margin-top: calc(-1 * var(--btn-size) * .42);
     border-radius:50%; border:none; cursor:pointer; user-select:none;
-    color:#ffffff; font-weight:900; font-size:clamp(36px, 10vw, 72px); letter-spacing:2px;
+    touch-action: manipulation;
+    color:#ffffff; font-weight:900; font-size:clamp(54px, 15vw, 108px); letter-spacing:2px;
     text-shadow: 0 2px 0 rgba(255,255,255,.45);
     background:
       radial-gradient(120% 120% at var(--cx) var(--cy), var(--btn1) 0 35%, var(--btn2) 36% 60%, var(--btn3) 61% 100%);
@@ -169,6 +171,7 @@
     box-shadow:0 12px 20px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.55);
     cursor:pointer; opacity:0; pointer-events:none; z-index:12;
     transition: opacity .25s ease;
+    touch-action: manipulation;
   }
   .withdraw.show{
     opacity:1; pointer-events:auto;
@@ -197,19 +200,23 @@
     position:fixed; left:50%; top: calc(env(safe-area-inset-top) + 6px);
     transform: translate(-50%, -140%);
     width: calc(100vw - 24px); max-width:600px;
-    background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(235,238,243,.95));
-    color:#000; border-radius:18px; padding:10px 14px; box-shadow:0 18px 28px rgba(0,0,0,.25);
-    display:flex; align-items:flex-start; gap:10px; transition: transform .5s cubic-bezier(.2,.9,.2,1.1); z-index:20; border:1px solid rgba(0,0,0,.08);
+    background: linear-gradient(180deg, rgba(190,198,208,.94), rgba(140, 144, 148, 0.96));
+    color:#000; border-radius:26px; padding:12px 16px; box-shadow:0 18px 28px rgba(0,0,0,.25);
+    display:flex; align-items:flex-start; gap:12px; transition: transform .5s cubic-bezier(.2,.9,.2,1.1); z-index:20; border:1px solid rgba(0,0,0,.05);
+    backdrop-filter: saturate(180%) blur(22px);
+    touch-action: manipulation;
   }
   .ios-banner.show{ transform: translate(-50%, 0); }
-  .ios-avatar{ width:34px; height:34px; border-radius:50%; background:linear-gradient(180deg,#e1e5ea,#c8ccd3); display:grid; place-items:center; flex:0 0 34px; }
-  .ios-avatar::after{ content:""; width:14px; height:14px; border-radius:50%; background:linear-gradient(#fff,#e9eef5); box-shadow:inset 0 0 0 1px rgba(0,0,0,.06); }
+  .ios-avatar{ width:44px; height:44px; border-radius:50%; background:linear-gradient(180deg,#989ba0,#cbd1d9); display:grid; place-items:center; flex:0 0 44px; position:relative; }
+  .ios-avatar::before{ content:""; position:absolute; top:9px; left:50%; transform:translateX(-50%); width:16px; height:16px; border-radius:50%; background:linear-gradient(#fff,#e9eef5); box-shadow:inset 0 0 0 1px rgba(0,0,0,.06); }
+  .ios-avatar::after{ content:""; position:absolute; bottom:7px; left:50%; transform:translateX(-50%); width:28px; height:14px; border-radius:10px/7px; background:linear-gradient(#fff,#e9eef5); box-shadow:inset 0 0 0 1px rgba(0,0,0,.04); }
   .ios-content{ flex:1; min-width:0; }
   .ios-top{ display:flex; justify-content:space-between; align-items:center; margin-top:2px; }
-  .ios-sender{ font-weight:700; font-size:16px; }
-  .ios-time{ font-size:12px; opacity:.6; }
-  .ios-text{ margin-top:2px; line-height:1.28; font-size:15px; }
-  .ios-imsg{ width:18px; height:18px; border-radius:4px; background:#31d158; display:inline-block; vertical-align:-3px; box-shadow: inset 0 -2px 0 rgba(0,0,0,.12); margin-right:6px; }
+  .ios-sender{ font-weight:700; font-size:22px; letter-spacing:.2px; line-height:1; font-variant-numeric: tabular-nums; }
+  .ios-time{ font-size:15px; opacity:.55; line-height:1; }
+  .ios-text{ margin-top:6px; line-height:1.25; font-size:17px; font-weight:500; }
+  .ios-imsg{ position:absolute; left:-7px; bottom:-5px; width:20px; height:20px; border-radius:5px; background:#31d158; display:inline-block; box-shadow: inset 0 -2px 0 rgba(0,0,0,.12), 0 0 0 1px rgba(0,0,0,.06); }
+  .ios-imsg::after{ content:""; position:absolute; inset:0; margin:auto; width:12px; height:12px; border-radius:4px; background:linear-gradient(#fff,#f4f7fb); box-shadow:inset 0 -1px 0 rgba(0,0,0,.08); }
 
   .toast{
     position:fixed; left:50%; bottom: calc(24px + env(safe-area-inset-bottom));
@@ -231,13 +238,13 @@
 
   <!-- СМС (как раньше) -->
   <div class="ios-banner" id="iosBanner" role="button" tabindex="0" aria-label="Уведомление СМС">
-    <div class="ios-avatar" aria-hidden="true"></div>
+    <div class="ios-avatar" aria-hidden="true"><span class="ios-imsg" aria-hidden="true"></span></div>
     <div class="ios-content">
       <div class="ios-top">
         <div class="ios-sender">900</div>
         <div class="ios-time" id="iosTime">сейчас</div>
       </div>
-      <div class="ios-text"><span class="ios-imsg" aria-hidden="true"></span><span id="iosBody">ECMC3457 00:00 Пополнение 0 р Баланс: ……</span></div>
+      <div class="ios-text"><span id="iosBody">ECMC3457 00:00 Пополнение 0 р Баланс: ……</span></div>
     </div>
   </div>
 
