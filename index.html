@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+<title>БАБЛО — casual clicker</title>
+<style>
+  :root{
+    /* Палитра casual */
+    --sky-top:#29b6ff;
+    --sky-mid:#79dbff;
+    --sky-bottom:#5ef0b7;
+    --hill1:#32e39a;
+    --hill2:#00c978;
+
+    --btn1:#ff6b6b;   /* геймплейная кнопка — красный градиент (ярче) */
+    --btn2:#ff2d2d;
+    --btn3:#c40000;
+    --btn-rim:#b36b00;
+
+    --badge1:#2b2f55; /* бейдж баланса */
+    --badge2:#181b33;
+    --glow:#00ffb3;
+
+    --withdraw1:#64ffb3;
+    --withdraw2:#00d37a;
+
+    --btn-size: clamp(220px, 70vw, 420px);
+    --scale: 1; --cx: 30%; --cy: 25%;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    -webkit-tap-highlight-color: transparent;
+    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", system-ui, Segoe UI, Roboto, Arial, "Noto Sans", sans-serif;
+    color:#111;
+    background:
+      linear-gradient(180deg, var(--sky-top), var(--sky-mid) 45%, var(--sky-bottom) 70%) fixed no-repeat;
+    overflow-x:hidden;
+  }
+
+  /* Милые облачка */
+  .clouds{
+    position:fixed; inset:0; overflow:hidden; pointer-events:none; z-index:0;
+  }
+  .cloud{
+    position:absolute; top:10vh; width:220px; height:80px; background:rgba(255,255,255,.9);
+    filter: blur(2px); border-radius:60px;
+    box-shadow: 40px 10px 0 10px rgba(255,255,255,.85),
+                90px -10px 0 20px rgba(255,255,255,.9),
+                150px 10px 0 14px rgba(255,255,255,.82);
+    opacity:.8; animation: drift 48s linear infinite;
+  }
+  .cloud.c2{ top:18vh; left:10vw; transform:scale(1.2); animation-duration: 60s; opacity:.7}
+  .cloud.c3{ top:26vh; left:60vw; transform:scale(0.9); animation-duration: 54s; opacity:.75}
+  @keyframes drift{
+    0%{ transform: translateX(-40vw) scale(var(--s,1)); }
+    100%{ transform: translateX(120vw) scale(var(--s,1)); }
+  }
+
+  .game{
+    position:relative;
+    width:min(720px, 100vw);
+    min-height:100svh;
+    margin:0 auto;
+    padding: calc(10px + env(safe-area-inset-top)) 12px calc(24px + env(safe-area-inset-bottom));
+    z-index:1;
+  }
+
+  /* ===== Бейдж баланса (слева-сверху) ===== */
+  .cash{
+    position:fixed;
+    left: max(12px, env(safe-area-inset-left));
+    top:  max(12px, calc(env(safe-area-inset-top) + 8px));
+    display:flex; align-items:center; gap:10px;
+    padding:10px 14px;
+    border-radius:14px;
+    background: linear-gradient(180deg, rgba(35,40,80,.85), rgba(16,18,36,.88));
+    box-shadow:
+      0 8px 24px rgba(0,0,0,.25),
+      inset 0 1px 0 rgba(255,255,255,.16);
+    color:#eef6ff;
+    backdrop-filter: blur(6px);
+  }
+  .cash.glow{ box-shadow:
+      0 10px 26px rgba(0,0,0,.25),
+      0 0 28px 6px color-mix(in oklab, var(--glow) 50%, transparent),
+      inset 0 1px 0 rgba(255,255,255,.16);
+    transition: box-shadow .6s ease;
+  }
+  .cash-icon{
+    width:36px; height:36px; border-radius:10px;
+    display:grid; place-items:center;
+    background: radial-gradient(90% 90% at 30% 25%, #fff59d, #ffd54f 35%, #ffb300 70%, #f57c00 100%);
+    box-shadow: inset 0 -4px 10px rgba(0,0,0,.25), 0 4px 10px rgba(0,0,0,.25);
+    color:#3b2b00; font-weight:900;
+    text-shadow: 0 1px 0 rgba(255,255,255,.4);
+  }
+  .cash-amt{
+    font-weight:800; letter-spacing:.2px;
+    font-size: clamp(18px, 4.8vw, 22px);
+    text-shadow: 0 1px 0 rgba(0,0,0,.35);
+  }
+
+  /* ===== Большая кнопка — внизу ===== */
+  .bigbtn-wrap{
+    position:fixed; left:50%;
+    bottom: calc(16px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    display:grid; place-items:center; z-index:10; width:var(--btn-size);
+  }
+  .base{
+    width:var(--btn-size); height: calc(var(--btn-size) * .22);
+    background: radial-gradient(120% 160% at 50% 10%, #a6b2c0, #6f7a86);
+    border-radius:999px; filter:drop-shadow(0 14px 24px rgba(0,0,0,.35));
+  }
+  .bigbtn{
+    position:relative; display:grid; place-items:center;
+    width:var(--btn-size); height:var(--btn-size);
+    margin-top: calc(-1 * var(--btn-size) * .42);
+    border-radius:50%; border:none; cursor:pointer; user-select:none;
+    color:#ffffff; font-weight:900; font-size:clamp(36px, 10vw, 72px); letter-spacing:2px;
+    text-shadow: 0 2px 0 rgba(255,255,255,.45);
+    background:
+      radial-gradient(120% 120% at var(--cx) var(--cy), var(--btn1) 0 35%, var(--btn2) 36% 60%, var(--btn3) 61% 100%);
+    box-shadow:
+      inset 0 -18px 28px rgba(0,0,0,.25),
+      inset 0 12px 22px rgba(255,255,255,.25),
+      0 18px 36px rgba(0,0,0,.35),
+      0 0 0 6px rgba(139,94,0,.15);
+    transform: scale(var(--scale));
+    transition:
+      transform 120ms cubic-bezier(.2,.8,.2,1),
+      --cx 220ms cubic-bezier(.3,.7,.2,1),
+      --cy 220ms cubic-bezier(.3,.7,.2,1),
+      filter 120ms linear, box-shadow 120ms ease;
+  }
+
+  /* HUD над кнопкой */
+  .hud{
+    position:fixed; left:50%;
+    bottom: calc(var(--btn-size) + 30px + env(safe-area-inset-bottom));
+    transform: translateX(-50%);
+    display:flex; flex-direction:column; align-items:center; gap:6px;
+    width:min(90vw, 640px); text-align:center; z-index:9;
+  }
+  .multiplier{
+    font-size:clamp(14px, 4vw, 18px);
+    font-weight:700; padding:6px 10px; border-radius:999px;
+    background: linear-gradient(180deg, rgba(0,0,0,.28), rgba(0,0,0,.35));
+    color:#fff; text-shadow:0 1px 0 rgba(0,0,0,.35);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,.18);
+    transition: background-color .2s, transform .15s;
+  }
+  .multiplier.low{ background:linear-gradient(180deg, rgba(0,0,0,.28), rgba(0,0,0,.35)); }
+  .multiplier.medium{ background:linear-gradient(180deg, rgba(255,193,7,.55), rgba(255,152,0,.6)); }
+  .multiplier.high{ background:linear-gradient(180deg, rgba(76,255,171,.6), rgba(53,217,127,.65)); }
+
+  /* Кнопка «Вывести» — выше середины, с пульсом */
+  .withdraw{
+    position:fixed; left:50%; top: 38vh;
+    transform: translate(-50%, -50%) scale(1);
+    padding:14px 22px;
+    font-size:clamp(16px, 4.2vw, 18px); font-weight:800; color:#0b2b17;
+    background: linear-gradient(180deg, var(--withdraw1), var(--withdraw2));
+    border:none; border-radius:14px;
+    box-shadow:0 12px 20px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.55);
+    cursor:pointer; opacity:0; pointer-events:none; z-index:12;
+    transition: opacity .25s ease;
+  }
+  .withdraw.show{
+    opacity:1; pointer-events:auto;
+    animation: pulse 1.4s ease-in-out infinite;
+  }
+  @keyframes pulse{
+    0%,100%{ transform: translate(-50%, -50%) scale(1); box-shadow:0 12px 20px rgba(0,0,0,.2), inset 0 1px 0 rgba(255,255,255,.55); }
+    50%{ transform: translate(-50%, -50%) scale(1.06); box-shadow:0 16px 26px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.55); }
+  }
+
+  /* Поп-слой для +деньги */
+  .pop-global{ position:fixed; inset:0; pointer-events:none; overflow:visible; z-index:15; }
+  .pop-global span{
+    position:absolute; font-weight:900; color:#fff;
+    text-shadow:0 2px 0 rgba(0,0,0,.35);
+    opacity:0; animation: popmoney 900ms ease-out forwards; white-space:nowrap; user-select:none;
+  }
+  @keyframes popmoney{
+    0%{ transform:translateY(0) scale(.9); opacity:0}
+    15%{ opacity:1}
+    100%{ transform:translateY(-80px) scale(1.12); opacity:0}
+  }
+
+  /* ===== iPhone-уведомление (БЕЗ изменений стиля) ===== */
+  .ios-banner{
+    position:fixed; left:50%; top: calc(env(safe-area-inset-top) + 6px);
+    transform: translate(-50%, -140%);
+    width: calc(100vw - 24px); max-width:600px;
+    background: linear-gradient(180deg, rgba(255,255,255,.94), rgba(235,238,243,.95));
+    color:#000; border-radius:18px; padding:10px 14px; box-shadow:0 18px 28px rgba(0,0,0,.25);
+    display:flex; align-items:flex-start; gap:10px; transition: transform .5s cubic-bezier(.2,.9,.2,1.1); z-index:20; border:1px solid rgba(0,0,0,.08);
+  }
+  .ios-banner.show{ transform: translate(-50%, 0); }
+  .ios-avatar{ width:34px; height:34px; border-radius:50%; background:linear-gradient(180deg,#e1e5ea,#c8ccd3); display:grid; place-items:center; flex:0 0 34px; }
+  .ios-avatar::after{ content:""; width:14px; height:14px; border-radius:50%; background:linear-gradient(#fff,#e9eef5); box-shadow:inset 0 0 0 1px rgba(0,0,0,.06); }
+  .ios-content{ flex:1; min-width:0; }
+  .ios-top{ display:flex; justify-content:space-between; align-items:center; margin-top:2px; }
+  .ios-sender{ font-weight:700; font-size:16px; }
+  .ios-time{ font-size:12px; opacity:.6; }
+  .ios-text{ margin-top:2px; line-height:1.28; font-size:15px; }
+  .ios-imsg{ width:18px; height:18px; border-radius:4px; background:#31d158; display:inline-block; vertical-align:-3px; box-shadow: inset 0 -2px 0 rgba(0,0,0,.12); margin-right:6px; }
+
+  .toast{
+    position:fixed; left:50%; bottom: calc(24px + env(safe-area-inset-bottom));
+    transform:translate(-50%, 40px);
+    background:rgba(30,30,32,.95); color:#fff; padding:10px 14px;
+    border-radius:12px; font-size:14px; box-shadow:0 10px 20px rgba(0,0,0,.25);
+    opacity:0; transition: transform .3s ease, opacity .3s ease; z-index:25;
+  }
+  .toast.show{ transform:translate(-50%, 0); opacity:1; }
+</style>
+</head>
+<body>
+  <!-- фон-облака -->
+  <div class="clouds" aria-hidden="true">
+    <div class="cloud" style="left:-30vw; --s:1;"></div>
+    <div class="cloud c2"></div>
+    <div class="cloud c3"></div>
+  </div>
+
+  <!-- СМС (как раньше) -->
+  <div class="ios-banner" id="iosBanner" role="button" tabindex="0" aria-label="Уведомление СМС">
+    <div class="ios-avatar" aria-hidden="true"></div>
+    <div class="ios-content">
+      <div class="ios-top">
+        <div class="ios-sender">900</div>
+        <div class="ios-time" id="iosTime">сейчас</div>
+      </div>
+      <div class="ios-text"><span class="ios-imsg" aria-hidden="true"></span><span id="iosBody">ECMC3457 00:00 Пополнение 0 р Баланс: ……</span></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">это так не работает к сожалению</div>
+
+  <main class="game" role="main">
+    <!-- Бейдж баланса -->
+    <div class="cash" id="cashBadge" aria-live="polite">
+      <div class="cash-icon">₽</div>
+      <div class="cash-amt" id="balance">0</div>
+    </div>
+
+    <!-- HUD над кнопкой -->
+    <div class="hud">
+      <div class="multiplier low" id="multiplier">×1.00</div>
+    </div>
+
+    <!-- Большая кнопка у дна -->
+    <div class="bigbtn-wrap">
+      <div class="base" aria-hidden="true"></div>
+      <button class="bigbtn" id="moneyBtn" aria-label="Заработать">БАБЛО</button>
+    </div>
+
+    <!-- «Вывести» — выше середины -->
+    <button class="withdraw" id="withdrawBtn">Вывести</button>
+
+    <!-- Поп-слой -->
+    <div class="pop-global" id="popGlobal" aria-hidden="true"></div>
+  </main>
+
+<script>
+(() => {
+  const btn = document.getElementById('moneyBtn');
+  const wd  = document.getElementById('withdrawBtn');
+  const multiEl = document.getElementById('multiplier');
+
+  const banner = document.getElementById('iosBanner');
+  const iosTime = document.getElementById('iosTime');
+  const iosBody = document.getElementById('iosBody');
+
+  const popGlobal = document.getElementById('popGlobal');
+  const toast = document.getElementById('toast');
+
+  const cashAmt = document.getElementById('balance');
+  const cashBadge = document.getElementById('cashBadge');
+
+  let clicks = 0;
+  let balance = 0;
+
+  const basePerClick = 100;
+
+  // Параметры темпа
+  const fastWindow = 150;
+  const comboStep  = 0.10;
+  const comboMax   = 3.0;
+  const slowStart  = 300;
+  const slowEnd    = 2500;
+  const slowMax    = 2.5;
+
+  let combo = 0;
+  let lastTap = 0;
+
+  const fmt = new Intl.NumberFormat('ru-RU');
+
+  function updateBalance(){
+    cashAmt.textContent = fmt.format(balance);
+    cashBadge.classList.add('glow');
+    setTimeout(()=> cashBadge.classList.remove('glow'), 300);
+  }
+
+  function updateMultiplierDisplay(comboMul, chargeMul){
+    const total = comboMul * chargeMul;
+    multiEl.textContent = `×${total.toFixed(2)}`;
+    multiEl.classList.remove('low','medium','high');
+    multiEl.style.transform = 'scale(1.05)';
+    setTimeout(()=>{ multiEl.style.transform = 'scale(1)'; }, 140);
+
+    if (total < 1.5) multiEl.classList.add('low');
+    else if (total < 2.5) multiEl.classList.add('medium');
+    else multiEl.classList.add('high');
+  }
+
+  // всплывающая сумма в верхней половине
+  function randMoneyPop(text){
+    const span = document.createElement('span');
+    span.textContent = text;
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const padding = 0.06;
+    const minX = vw * padding, maxX = vw * (1 - padding);
+    const minY = vh * 0.06,   maxY = vh * 0.46;
+    const x = Math.random() * (maxX - minX) + minX;
+    const y = Math.random() * (maxY - minY) + minY;
+    span.style.left = x + 'px';
+    span.style.top  = y + 'px';
+    span.style.fontSize = Math.max(18, Math.min(vw * 0.06, 28)) + 'px';
+    span.style.textShadow = '0 2px 0 rgba(0,0,0,.35), 0 0 12px rgba(77,255,179,.55)';
+    popGlobal.appendChild(span);
+    setTimeout(() => span.remove(), 950);
+  }
+
+  // Нажатие — плавно -20px по размеру (через масштаб)
+  function pressedScale(){
+    const s = parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--btn-size'));
+    if (!s || isNaN(s)) return 0.96;
+    return (s - 20) / s;
+  }
+  function pressDown(){
+    btn.style.setProperty('--scale', pressedScale());
+    btn.style.setProperty('--cx', '34%');
+    btn.style.setProperty('--cy', '22%');
+    btn.style.filter = 'brightness(1.02) saturate(1.06)';
+    btn.style.boxShadow = 'inset 0 -12px 22px rgba(0,0,0,.25), inset 0 8px 18px rgba(255,255,255,.22), 0 14px 28px rgba(0,0,0,.32), 0 0 0 6px rgba(139,94,0,.18)';
+  }
+  function pressUp(){
+    btn.style.setProperty('--scale', 1);
+    btn.style.setProperty('--cx', '30%');
+    btn.style.setProperty('--cy', '25%');
+    btn.style.filter = 'none';
+    btn.style.boxShadow = '';
+  }
+  btn.addEventListener('pointerdown', pressDown);
+  ['pointerup','pointerleave','pointercancel'].forEach(ev=>btn.addEventListener(ev, pressUp));
+
+  // === Игровая логика ===
+  btn.addEventListener('click', () => {
+    const now = performance.now();
+    const dt = lastTap ? (now - lastTap) : Infinity;
+    lastTap = now;
+
+    // быстрые тапы = combo
+    if (dt <= fastWindow) {
+      combo = Math.min(combo + 1, Math.floor((comboMax - 1) / comboStep));
+    } else if (dt > 400) {
+      combo = Math.max(0, combo - 1);
+    }
+    const comboMul = Math.min(1 + combo * comboStep, comboMax);
+
+    // пауза = charge
+    let chargeMul = 1;
+    if (dt >= slowStart && dt <= slowEnd) {
+      const t = (dt - slowStart) / (slowEnd - slowStart);
+      chargeMul = 1 + t * (slowMax - 1);
+    } else if (dt > slowEnd) {
+      combo = 0;
+      chargeMul = slowMax;
+    }
+
+    updateMultiplierDisplay(comboMul, chargeMul);
+
+    const gain = Math.round(basePerClick * comboMul * chargeMul);
+
+    clicks++;
+    balance += gain;
+    updateBalance();
+    randMoneyPop(`+${fmt.format(gain)} ₽`);
+
+    if (clicks >= 5) wd.classList.add('show');
+  }, {passive:true});
+
+  // «Вывести» — задержка 0.5 с до показа уведомления
+  wd.addEventListener('click', () => {
+    if (balance <= 0) return;
+
+    const now = new Date();
+    const hhmm = now.toLocaleTimeString('ru-RU', {hour:'2-digit', minute:'2-digit'});
+    const sumText = fmt.format(balance).replace(/\s/g,' ');
+    iosTime.textContent = 'сейчас';
+    iosBody.textContent = `ECMC3457 ${hhmm} Пополнение ${sumText} р Баланс: ……`;
+
+    setTimeout(() => {
+      banner.classList.add('show');
+      setTimeout(() => banner.classList.remove('show'), 4000);
+    }, 500);
+
+    // сброс
+    clicks = 0;
+    balance = 0;
+    combo = 0;
+    lastTap = 0;
+    updateBalance();
+    updateMultiplierDisplay(1,1);
+    wd.classList.remove('show');
+  }, {passive:true});
+
+  // Клик по баннеру — «это так не работает...»
+  function showToast(){
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 1800);
+  }
+  banner.addEventListener('click', showToast);
+  banner.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); showToast(); }});
+
+  // Старт
+  updateBalance();
+  updateMultiplierDisplay(1,1);
+})();
+</script>
+</body>
+</html>
