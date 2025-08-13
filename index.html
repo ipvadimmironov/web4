@@ -235,6 +235,28 @@
     opacity:0; transition: transform .3s ease, opacity .3s ease; z-index:25;
   }
   .toast.show{ transform:translate(-50%, 0); opacity:1; }
+
+  /* ===== Модальное окно промо ===== */
+  .modal-overlay{ position:fixed; inset:0; background:rgba(0,0,0,.45); backdrop-filter: blur(6px); display:grid; place-items:center; opacity:0; pointer-events:none; transition: opacity .25s ease; z-index:50; }
+  .modal-overlay.show{ opacity:1; pointer-events:auto; }
+  .modal{
+    width:min(560px, 92vw);
+    background:linear-gradient(180deg, #ffffff, #f4f6fb);
+    border-radius:18px; padding:18px 18px 16px;
+    box-shadow:0 18px 36px rgba(0,0,0,.28), inset 0 1px 0 rgba(255,255,255,.6);
+    color:#0b1020;
+  }
+  .modal-header{ display:flex; align-items:center; gap:10px; margin-bottom:6px; }
+  .modal-emoji{ font-size:28px; }
+  .modal-title{ font-weight:800; font-size:18px; margin:0; }
+  .modal-body{ font-size:15px; line-height:1.45; margin-top:6px; }
+  .modal-actions{ margin-top:14px; display:flex; gap:10px; }
+  .modal a{
+    display:inline-block; text-decoration:none; font-weight:800; color:#0b2b17;
+    background:linear-gradient(180deg, var(--withdraw1), var(--withdraw2));
+    padding:10px 14px; border-radius:12px; box-shadow:0 10px 18px rgba(0,0,0,.18), inset 0 1px 0 rgba(255,255,255,.55);
+  }
+  .modal-close{ margin-left:auto; background:transparent; border:none; font-size:22px; cursor:pointer; line-height:1; padding:6px; }
 </style>
 </head>
 <body>
@@ -284,6 +306,23 @@
     <div class="pop-global" id="popGlobal" aria-hidden="true"></div>
   </main>
 
+  <!-- Модальное окно -->
+  <div class="modal-overlay" id="promoModal" aria-hidden="true">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <div class="modal-header">
+        <div class="modal-emoji" aria-hidden="true">🚜</div>
+        <h2 class="modal-title" id="modalTitle">Полезный апгрейд</h2>
+        <button class="modal-close" id="modalClose" aria-label="Закрыть">×</button>
+      </div>
+      <div class="modal-body">
+        Подписывайся на канал Вадима Миронова, выигрывай наушники и записывайся на карьерную консультацию.
+      </div>
+      <div class="modal-actions">
+        <a href="https://t.me/ipVadimMironov" target="_blank" rel="noopener">Открыть канал</a>
+      </div>
+    </div>
+  </div>
+
 <script>
 (() => {
   const btn = document.getElementById('moneyBtn');
@@ -299,6 +338,16 @@
 
   const cashAmt = document.getElementById('balance');
   const cashBadge = document.getElementById('cashBadge');
+
+  const modal = document.getElementById('promoModal');
+  const modalClose = document.getElementById('modalClose');
+
+  function openModal(){ modal.classList.add('show'); modal.setAttribute('aria-hidden','false'); }
+  function closeModal(){ modal.classList.remove('show'); modal.setAttribute('aria-hidden','true'); }
+
+  modal.addEventListener('click', (e)=>{ if(e.target === modal) closeModal(); });
+  modalClose.addEventListener('click', closeModal);
+  document.addEventListener('keydown', (e)=>{ if(e.key==='Escape') closeModal(); });
 
   let clicks = 0;
   let balance = 0;
@@ -439,14 +488,56 @@
     wd.classList.remove('show');
   }, {passive:true});
 
-  // Клик по баннеру — «это так не работает...»
-  function showToast(){
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 1800);
-  }
-  banner.addEventListener('click', showToast);
-  banner.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); showToast(); }});
+  // Клик по баннеру — создаём второе уведомление «Оно так не работает»
+  function spawnInfoBanner(){
+    const existing = document.getElementById('extraBanner');
+    if (existing) existing.remove();
 
+    const extra = document.createElement('div');
+    extra.className = 'ios-banner';
+    extra.id = 'extraBanner';
+    extra.setAttribute('role','button');
+    extra.setAttribute('tabindex','0');
+    extra.setAttribute('aria-label','Уведомление СМС');
+
+    const avatar = document.createElement('div');
+    avatar.className = 'ios-avatar';
+    const img = document.createElement('img');
+    img.src = 'avatar.png'; img.alt = ''; img.className = 'ios-avatar-img';
+    avatar.appendChild(img);
+
+    const content = document.createElement('div');
+    content.className = 'ios-content';
+
+    const top = document.createElement('div');
+    top.className = 'ios-top';
+    const sender = document.createElement('div'); sender.className = 'ios-sender'; sender.textContent = '900';
+    const time = document.createElement('div'); time.className = 'ios-time'; time.textContent = 'сейчас';
+    top.appendChild(sender); top.appendChild(time);
+
+    const text = document.createElement('div');
+    text.className = 'ios-text';
+    const bodySpan = document.createElement('span'); bodySpan.id = 'iosBodyExtra'; bodySpan.textContent = 'Оно так не работает';
+    text.appendChild(bodySpan);
+
+    content.appendChild(top);
+    content.appendChild(text);
+
+    extra.appendChild(avatar);
+    extra.appendChild(content);
+
+    document.body.appendChild(extra);
+    requestAnimationFrame(()=> extra.classList.add('show'));
+
+    const onOpen = () => { openModal(); extra.remove(); };
+    extra.addEventListener('click', onOpen);
+    extra.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); onOpen(); }});
+  }
+
+    // Обновляем поведение клика по главному баннеру
+  banner.addEventListener('click', spawnInfoBanner);
+  banner.addEventListener('keydown', (e)=>{ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); spawnInfoBanner(); }});
+  
   // Старт
   updateBalance();
   updateMultiplierDisplay(1,1);
